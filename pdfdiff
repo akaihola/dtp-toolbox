@@ -1,0 +1,15 @@
+#!/bin/bash
+
+PDF1=$1 ; shift
+PDF2=$1 ; shift
+
+echo Converting $PDF1...
+gm convert -density 150x150 -fill red -opaque black +antialias $PDF1 back%02d.png
+echo Converting $PDF2...
+gm convert -density 150x150 -transparent white +antialias $PDF2 front%02d.png
+for front in front??.png; do
+  back=back${front#front}
+  result=result${front#front}
+  echo Overlaying $front on $back
+  gm composite $front $back $result
+done
