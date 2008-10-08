@@ -17,3 +17,9 @@ each other while turning black into red in the bottom one.
 
 The resulting PNG files emphasize any differences in the two PDF
 files.
+
+
+pdffontstocurves
+================
+
+Convert all text (or other font symbols) in a PDF file to curves.

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# gs options adapted from Mark Everitt's comment at
+# https://bugs.launchpad.net/inkscape/+bug/199689/comments/4
+
+OLDPDF=$1 ; shift
+NEWPDF=${OLDPDF%.pdf}.nofonts.pdf
+PS_TEMP=$(tempfile -s .ps)
+gs -sDEVICE=pswrite -dNOCACHE -sOutputFile="$PS_TEMP" -q -dbatch -dNOPAUSE "$OLDPDF" -c quit
+ps2pdf "$PS_TEMP" "$NEWPDF"
+rm "$PS_TEMP"
