@@ -23,3 +23,9 @@ pdffontstocurves
 ================
 
 Convert all text (or other font symbols) in a PDF file to curves.
+
+
+bitmaps2pdf
+===========
+
+Combine multiple bitmap images into a multi-page PDF.
