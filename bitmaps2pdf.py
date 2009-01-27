@@ -22,8 +22,12 @@ def unittest():
 
 
 def main(filepaths, opts):
-    imgpaths = filepaths[:-1]
-    pdfpath = filepaths[-1]
+    if len(filepaths) == 1:
+        imgpaths = filepaths[:1]
+        pdfpath = '%s.pdf' % imgpaths[0].rsplit('.', 1)[0]
+    else:
+        imgpaths = filepaths[:-1]
+        pdfpath = filepaths[-1]
     if not opts.force and exists(pdfpath):
         raise OSError('File %r exists. '
                       'Use --force/-f option to overwrite.' % pdfpath)
