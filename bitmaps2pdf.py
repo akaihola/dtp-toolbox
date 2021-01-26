@@ -1,67 +1,66 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
-
-# CONFIGURATION ########################################################
-
-
-# END OF CONFIGURATION #################################################
-
-
-from optparse import OptionParser
 import logging
-from reportlab.pdfgen import canvas
+from argparse import ArgumentParser, Namespace
+from pathlib import Path
+from typing import List
+
+from PIL import Image
 from reportlab.lib.pagesizes import A4
-import Image
-from os.path import exists
+from reportlab.pdfgen.canvas import Canvas
 
 
-def unittest():
-    from doctest import testmod
-    testmod()
+def get_pdfpath(output: str, paths: List[str]) -> Path:
+    if output:
+        return Path(output)
+    first, *rest = [Path(path) for path in paths]
+    shortest_imgname = min(len(img.name) for img in [first] + rest)
+    for length in range(shortest_imgname, 0, -1):
+        if all(img.name[:length] == first.name[:length] for img in rest):
+            if all(img.parent == first.parent for img in rest):
+                pdfdir = first.parent
+            else:
+                pdfdir = Path.cwd()
+            output_name = first.name[:length].rstrip(".")
+            return Path(pdfdir / f"{output_name}.pdf")
+    raise ValueError(
+        "-o / --output missing and the target PDF file name counldn't be"
+        " dertermined automatically"
+    )
 
 
-def main(filepaths, opts):
-    if len(filepaths) == 1:
-        imgpaths = filepaths[:1]
-        pdfpath = '%s.pdf' % imgpaths[0].rsplit('.', 1)[0]
-    else:
-        imgpaths = filepaths[:-1]
-        pdfpath = filepaths[-1]
-    if not opts.force and exists(pdfpath):
-        raise OSError('File %r exists. '
-                      'Use --force/-f option to overwrite.' % pdfpath)
-    c = canvas.Canvas(pdfpath, pagesize=A4, pageCompression=1)
-    for imgpath in imgpaths:
+def main(opts: Namespace) -> None:
+    pdfpath = get_pdfpath(opts.output, opts.imgpaths)
+    if not opts.force and pdfpath.exists():
+        raise OSError("File {pdfpath} exists. Use --force/-f option to overwrite.")
+    canvas = Canvas(str(pdfpath), pagesize=A4, pageCompression=1)
+    for imgpath in opts.imgpaths:
         widthpx, heightpx = Image.open(imgpath).size
-        logging.info('%4d x %4d %s' % (widthpx, heightpx, imgpath))
-        widthpt = 72.0*widthpx/300.0
-        heightpt = 72.0*heightpx/300.0
+        logging.info("%4d x %4d %s", widthpx, heightpx, imgpath)
+        widthpt = 72.0 * widthpx / 300.0
+        heightpt = 72.0 * heightpx / 300.0
         x = (A4[0] - widthpt) / 2.0
         ymarg = min((A4[1] - heightpt) / 2.0, x)
         y = A4[1] - ymarg - heightpt
-        c.drawImage(imgpath, x, y,
-                    width=widthpt,
-                    height=heightpt)
-        c.showPage()
-    logging.info('%5d pages %s' % (len(imgpaths), pdfpath))
-    c.save()
+        canvas.drawImage(imgpath, x, y, width=widthpt, height=heightpt)
+        canvas.showPage()
+    logging.info("%5d pages %s" % (len(opts.imgpaths), pdfpath))
+    canvas.save()
 
 
-if __name__ == '__main__':
-    p = OptionParser()
-    p.usage = 'usage: %prog imgfile [imgfile ...] outfile.pdf'
-    p.add_option('-u', '--unittest', action='store_true')
-    p.add_option('-q', '--quiet', action='count')
-    p.add_option('-f', '--force', action='store_true')
-    (opts, args) = p.parse_args()
+def parse_cmdline():
+    parser = ArgumentParser()
+    parser.add_argument("-q", "--quiet", action="count")
+    parser.add_argument("-f", "--force", action="store_true")
+    parser.add_argument("-o", "--output")
+    parser.add_argument("imgpaths", nargs="+")
+    return parser.parse_args()
 
-    loglevel = 20 + 10*(min(3, opts.quiet or 0))
-    logging.basicConfig(level=loglevel, format='%(message)s')
 
-    if opts.unittest:
-        unittest()
+if __name__ == "__main__":
+    opts = parse_cmdline()
 
-    else:
-        main(args, opts)
+    loglevel = 20 + 10 * (min(3, opts.quiet or 0))
+    logging.basicConfig(level=loglevel, format="%(message)s")
 
+    main(opts)
